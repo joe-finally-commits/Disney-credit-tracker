@@ -1,0 +1,825 @@
+<title>Disney Dining Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ground:#F5F3F7;
+  --surface:#FFFFFF;
+  --surface-2:#EEEBF3;
+  --ink:#171526;
+  --muted:#6A6580;
+  --line:#E2DEE9;
+  --line-strong:#CFC8DC;
+  --joe:#1F6F8B;
+  --joe-soft:#E3F0F4;
+  --em:#C24A6B;
+  --em-soft:#FAE6EB;
+  --gold:#B3781A;
+  --gold-bright:#D99A2B;
+  --gold-soft:#FBF1DD;
+  --warn:#B24A22;
+  --shadow:0 1px 2px rgba(23,21,38,.05), 0 8px 24px -12px rgba(23,21,38,.18);
+  --display:"Bricolage Grotesque","Hanken Grotesk",system-ui,sans-serif;
+  --body:"Hanken Grotesk",system-ui,-apple-system,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#14121C;
+    --surface:#1D1A28;
+    --surface-2:#262233;
+    --ink:#EDEAF4;
+    --muted:#9A93B0;
+    --line:#2E2A3D;
+    --line-strong:#3D3750;
+    --joe:#63BAD3;
+    --joe-soft:#16303A;
+    --em:#F0819E;
+    --em-soft:#3A1D27;
+    --gold:#F0B953;
+    --gold-bright:#F0B953;
+    --gold-soft:#312413;
+    --warn:#F09268;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#14121C;
+  --surface:#1D1A28;
+  --surface-2:#262233;
+  --ink:#EDEAF4;
+  --muted:#9A93B0;
+  --line:#2E2A3D;
+  --line-strong:#3D3750;
+  --joe:#63BAD3;
+  --joe-soft:#16303A;
+  --em:#F0819E;
+  --em-soft:#3A1D27;
+  --gold:#F0B953;
+  --gold-bright:#F0B953;
+  --gold-soft:#312413;
+  --warn:#F09268;
+  --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.6);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--ground);
+  color:var(--ink);
+  font-family:var(--body);
+  font-size:16px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{
+  max-width:880px;
+  margin:0 auto;
+  padding-inline:20px;
+  padding-block:28px 56px;
+  display:flex;
+  flex-direction:column;
+  gap:22px;
+}
+h1,h2,h3{margin:0;font-family:var(--display);text-wrap:balance}
+p{margin:0}
+
+/* ---------- masthead ---------- */
+.masthead{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.eyebrow{
+  font-family:var(--mono);
+  font-size:11px;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin:0 0 2px;
+}
+h1{font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.whoami{display:flex;align-items:center;gap:8px}
+.whoami-label{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.seg{display:flex;background:var(--surface-2);border-radius:999px;padding:3px;gap:2px}
+.seg button{
+  font-family:var(--body);font-size:13px;font-weight:600;
+  border:0;background:transparent;color:var(--muted);
+  padding:6px 14px;border-radius:999px;cursor:pointer;
+  transition:background .15s,color .15s;
+}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.seg button:hover{color:var(--ink)}
+
+/* ---------- settlement band ---------- */
+.settle{
+  background:var(--surface);
+  border-top:2px solid var(--gold-bright);
+  border-bottom:1px solid var(--line);
+  border-left:1px solid var(--line);
+  border-right:1px solid var(--line);
+  border-radius:4px;
+  padding:20px 22px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:20px;
+  flex-wrap:wrap;
+  box-shadow:var(--shadow);
+}
+.settle-copy{display:flex;flex-direction:column;gap:2px;min-width:0}
+.settle-verdict{
+  font-family:var(--display);
+  font-size:clamp(22px,5vw,30px);
+  font-weight:700;
+  letter-spacing:-.02em;
+  line-height:1.15;
+}
+.settle-verdict .amt{font-variant-numeric:tabular-nums;color:var(--gold)}
+.settle-note{font-size:13px;color:var(--muted)}
+.settle-note strong{font-family:var(--mono);font-weight:500;color:var(--ink)}
+
+/* ---------- buttons ---------- */
+button{font-family:inherit}
+.btn{
+  font-family:var(--body);font-size:13px;font-weight:600;
+  padding:9px 16px;border-radius:999px;cursor:pointer;
+  border:1px solid var(--line-strong);
+  background:var(--surface);color:var(--ink);
+  transition:background .15s,border-color .15s,transform .08s;
+  white-space:nowrap;
+}
+.btn:hover{background:var(--surface-2)}
+.btn:active{transform:translateY(1px)}
+.btn-gold{background:var(--gold-soft);border-color:var(--gold-bright);color:var(--gold)}
+.btn-gold:hover{background:var(--gold-soft);filter:brightness(.97)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn-quiet{border-color:transparent;background:transparent;color:var(--muted);padding:6px 10px}
+.btn-quiet:hover{background:var(--surface-2);color:var(--ink)}
+:focus-visible{outline:2px solid var(--gold-bright);outline-offset:2px;border-radius:4px}
+
+/* ---------- person columns ---------- */
+.columns{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.person{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:6px;
+  padding:18px;
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+  box-shadow:var(--shadow);
+}
+.person[data-side="joe"]{--hue:var(--joe);--hue-soft:var(--joe-soft)}
+.person[data-side="em"]{--hue:var(--em);--hue-soft:var(--em-soft)}
+.person-hd{display:flex;align-items:center;gap:9px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.dot{width:11px;height:11px;border-radius:50%;background:var(--hue);flex:none}
+.person-hd h2{font-size:21px;font-weight:700;letter-spacing:-.01em;color:var(--hue)}
+.you-tag{
+  font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  background:var(--hue-soft);color:var(--hue);
+  padding:3px 8px;border-radius:999px;margin-left:auto;
+}
+
+.meter{display:flex;flex-direction:column;gap:9px}
+.meter-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.meter-name{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.meter-left{font-family:var(--mono);font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums;text-align:right}
+.meter-left.over{color:var(--warn);font-weight:600}
+.meter-row{display:flex;align-items:center;gap:10px}
+.count{
+  font-family:var(--display);
+  font-size:38px;font-weight:700;line-height:1;
+  font-variant-numeric:tabular-nums;
+  flex:1;letter-spacing:-.03em;
+}
+.step{
+  width:40px;height:40px;flex:none;
+  border-radius:50%;
+  border:1px solid var(--line-strong);
+  background:var(--surface);
+  color:var(--ink);
+  font-size:20px;line-height:1;
+  display:grid;place-items:center;
+  cursor:pointer;
+  transition:background .12s,border-color .12s,color .12s,transform .08s;
+}
+.step:hover:not(:disabled){background:var(--hue-soft);border-color:var(--hue);color:var(--hue)}
+.step:active:not(:disabled){transform:scale(.93)}
+.step:disabled{opacity:.3;cursor:default}
+.track{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.fill{height:100%;background:var(--hue);border-radius:3px;transition:width .25s ease}
+@media (prefers-reduced-motion:reduce){.fill{transition:none}*{animation-duration:.01ms!important}}
+.fill.over{background:var(--warn)}
+
+.money{border-top:1px solid var(--line);padding-top:16px;display:flex;flex-direction:column;gap:10px}
+.money-row{display:flex;align-items:center;gap:10px}
+.money-amt{
+  font-family:var(--display);font-size:34px;font-weight:700;line-height:1;
+  font-variant-numeric:tabular-nums;flex:1;letter-spacing:-.03em;
+}
+.money-input{display:flex;align-items:center;gap:8px}
+.dollar{font-family:var(--mono);font-size:14px;color:var(--muted)}
+input[type="number"]{
+  font-family:var(--mono);font-size:14px;
+  width:100%;min-width:0;
+  padding:8px 10px;
+  border:1px solid var(--line-strong);
+  border-radius:4px;
+  background:var(--ground);
+  color:var(--ink);
+  -moz-appearance:textfield;
+}
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{
+  font-family:var(--mono);font-size:12px;
+  padding:5px 10px;border-radius:999px;
+  border:1px solid var(--line);background:transparent;color:var(--muted);
+  cursor:pointer;transition:background .12s,color .12s,border-color .12s;
+}
+.chip:hover{background:var(--hue-soft);color:var(--hue);border-color:var(--hue)}
+
+/* ---------- ledger ---------- */
+.ledger h3{font-size:15px;font-weight:700;letter-spacing:-.01em;margin-bottom:2px}
+.ledger-hd{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.log{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
+.log li{
+  display:flex;align-items:baseline;gap:10px;
+  padding:9px 2px;border-bottom:1px solid var(--line);
+  font-size:14px;
+}
+.log .who{font-weight:600;font-size:13px;flex:none;min-width:34px}
+.log .who.joe{color:var(--joe)}
+.log .who.em{color:var(--em)}
+.log .what{flex:1;min-width:0;color:var(--ink)}
+.log .delta{font-family:var(--mono);font-size:13px;font-variant-numeric:tabular-nums;flex:none;color:var(--muted)}
+.log .when{font-family:var(--mono);font-size:11px;color:var(--muted);flex:none;min-width:58px;text-align:right}
+.empty{padding:16px 2px;color:var(--muted);font-size:14px;border-bottom:1px solid var(--line)}
+
+/* ---------- trip setup ---------- */
+.setup{border:1px solid var(--line);border-radius:6px;background:var(--surface);overflow:hidden}
+.setup>summary{
+  cursor:pointer;padding:13px 16px;
+  font-family:var(--mono);font-size:11px;letter-spacing:.11em;text-transform:uppercase;color:var(--muted);
+  list-style:none;display:flex;align-items:center;justify-content:space-between;gap:8px;
+}
+.setup>summary::-webkit-details-marker{display:none}
+.setup>summary::after{content:"+";font-size:15px}
+.setup[open]>summary::after{content:"–"}
+.setup>summary:hover{color:var(--ink)}
+.setup-body{padding:4px 16px 18px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:14px}
+.fields{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.setup-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.setup-foot p{margin:0;font-size:12.5px;color:var(--muted);max-width:44ch}
+
+.status{
+  font-family:var(--mono);font-size:11.5px;color:var(--muted);
+  display:flex;align-items:center;gap:7px;
+}
+.status .led{width:7px;height:7px;border-radius:50%;background:var(--gold-bright);flex:none}
+.status.off .led{background:var(--line-strong)}
+footer{font-size:12.5px;color:var(--muted);text-align:center;line-height:1.6}
+.toast{
+  position:fixed;left:50%;bottom:22px;transform:translateX(-50%);
+  background:var(--ink);color:var(--ground);
+  font-size:13.5px;padding:10px 18px;border-radius:999px;
+  box-shadow:0 8px 30px -8px rgba(0,0,0,.5);
+  opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;
+  max-width:calc(100% - 40px);
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(-4px)}
+
+@media (max-width:720px){
+  .columns{grid-template-columns:1fr}
+  .wrap{padding-block:22px 44px}
+  h1{font-size:25px}
+  .fields{grid-template-columns:1fr 1fr}
+}
+</style>
+
+<div class="wrap">
+
+  <div class="masthead">
+    <div>
+      <p class="eyebrow">Disney Dining Plan &middot; shared tracker</p>
+      <h1>Joe &amp; Em</h1>
+    </div>
+    <div class="whoami">
+      <span class="whoami-label">I am</span>
+      <div class="seg" role="group" aria-label="Who is using this device">
+        <button type="button" id="me-joe" aria-pressed="false">Joe</button>
+        <button type="button" id="me-em" aria-pressed="false">Em</button>
+      </div>
+    </div>
+  </div>
+
+  <section class="settle" aria-live="polite">
+    <div class="settle-copy">
+      <p class="settle-verdict" id="verdict">All square</p>
+      <p class="settle-note" id="verdict-note">Nothing owed either way.</p>
+    </div>
+    <button type="button" class="btn btn-gold" id="settle-btn" disabled>Settle up</button>
+  </section>
+
+  <div class="columns" id="columns"></div>
+
+  <section class="ledger">
+    <div class="ledger-hd">
+      <h3>Activity</h3>
+      <span class="status" id="status"><span class="led"></span><span id="status-text">Connecting&hellip;</span></span>
+    </div>
+    <ul class="log" id="log"></ul>
+  </section>
+
+  <details class="setup">
+    <summary>Trip setup</summary>
+    <div class="setup-body">
+      <div class="fields">
+        <div class="field">
+          <label for="f-nights">Nights</label>
+          <input type="number" id="f-nights" min="1" max="30" step="1" value="5">
+        </div>
+        <div class="field">
+          <label for="f-snacks">Snacks / night</label>
+          <input type="number" id="f-snacks" min="0" max="10" step="1" value="1">
+        </div>
+        <div class="field">
+          <label for="f-qs">Quick svc / night</label>
+          <input type="number" id="f-qs" min="0" max="10" step="1" value="2">
+        </div>
+      </div>
+      <div class="setup-foot">
+        <p>Sets each person's credit allotment. The standard Quick-Service plan is 2 quick-service meals and 1 snack per person, per night.</p>
+        <button type="button" class="btn btn-quiet" id="reset-btn">Reset trip</button>
+      </div>
+    </div>
+  </details>
+
+  <footer>
+    Credits are per person for the whole stay and expire at midnight on check-out day.<br>
+    Both of you see the same numbers — changes show up on the other phone within a few seconds.
+  </footer>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var SIDES = ["joe","em"];
+  var NAMES = {joe:"Joe", em:"Em"};
+  var DEFAULT_SETTINGS = {nights:5, snacksPerNight:1, qsPerNight:2};
+
+  var settings = Object.assign({}, DEFAULT_SETTINGS);
+  var data = {joe:blank(), em:blank()};
+  var me = null;
+  var db = null;
+  var pending = {joe:0, em:0, settings:0};
+  var timers = {};
+
+  function blank(){ return {snacks:0, qs:0, owed:0, log:[]}; }
+
+  /* ---------- persistence ---------- */
+
+  function localKey(path){ return "ddl:" + path; }
+
+  function push(path, body){
+    if (db) {
+      return db.doc(path).set(body).catch(function(e){
+        toast(e && e.code === "revoked"
+          ? "Lost access to the shared list — reload the page."
+          : "Could not save that. Check your connection and try again.");
+      });
+    }
+    try { localStorage.setItem(localKey(path), JSON.stringify(body)); } catch(e){}
+    return Promise.resolve();
+  }
+
+  function readLocal(path){
+    try {
+      var raw = localStorage.getItem(localKey(path));
+      return raw ? JSON.parse(raw) : null;
+    } catch(e){ return null; }
+  }
+
+  function scheduleWrite(side){
+    pending[side]++;
+    clearTimeout(timers[side]);
+    timers[side] = setTimeout(function(){
+      var body = {
+        snacks: data[side].snacks,
+        qs: data[side].qs,
+        owed: data[side].owed,
+        log: data[side].log
+      };
+      push("trip/" + side, body).then(function(){ pending[side] = 0; },
+                                      function(){ pending[side] = 0; });
+    }, 300);
+  }
+
+  function writeSettings(){
+    pending.settings++;
+    clearTimeout(timers.settings);
+    timers.settings = setTimeout(function(){
+      push("trip/settings", {
+        nights: settings.nights,
+        snacksPerNight: settings.snacksPerNight,
+        qsPerNight: settings.qsPerNight
+      }).then(function(){ pending.settings = 0; }, function(){ pending.settings = 0; });
+    }, 400);
+  }
+
+  function num(v, fallback){
+    var n = typeof v === "number" ? v : parseFloat(v);
+    return isFinite(n) ? n : fallback;
+  }
+
+  function adoptSide(side, d){
+    data[side] = {
+      snacks: Math.max(0, Math.round(num(d.snacks, 0))),
+      qs: Math.max(0, Math.round(num(d.qs, 0))),
+      owed: Math.round(num(d.owed, 0) * 100) / 100,
+      log: Array.isArray(d.log) ? d.log.slice(0, 30) : []
+    };
+  }
+
+  function adoptSettings(d){
+    settings = {
+      nights: Math.max(1, Math.round(num(d.nights, DEFAULT_SETTINGS.nights))),
+      snacksPerNight: Math.max(0, Math.round(num(d.snacksPerNight, DEFAULT_SETTINGS.snacksPerNight))),
+      qsPerNight: Math.max(0, Math.round(num(d.qsPerNight, DEFAULT_SETTINGS.qsPerNight)))
+    };
+  }
+
+  /* ---------- actions ---------- */
+
+  function actor(){ return me || "joe"; }
+
+  function logEntry(side, kind, delta){
+    var entry = {t: Date.now(), by: actor(), kind: kind, d: delta};
+    data[side].log.unshift(entry);
+    data[side].log = data[side].log.slice(0, 24);
+  }
+
+  function bumpCredit(side, kind, delta){
+    var next = data[side][kind] + delta;
+    if (next < 0) return;
+    data[side][kind] = next;
+    logEntry(side, kind, delta);
+    scheduleWrite(side);
+    render();
+  }
+
+  function bumpMoney(side, amount){
+    if (!amount || !isFinite(amount)) return;
+    var next = Math.round((data[side].owed + amount) * 100) / 100;
+    if (next < 0) next = 0;
+    if (next === data[side].owed) return;
+    var applied = Math.round((next - data[side].owed) * 100) / 100;
+    data[side].owed = next;
+    logEntry(side, "money", applied);
+    scheduleWrite(side);
+    render();
+  }
+
+  function settleUp(){
+    var net = netBalance();
+    if (!net) return;
+    if (!confirm(settlementSentence(net) + "\n\nMark this as paid and reset both balances to $0?")) return;
+    SIDES.forEach(function(side){
+      if (data[side].owed !== 0) {
+        data[side].owed = 0;
+      }
+    });
+    var payer = net > 0 ? "em" : "joe";
+    data[payer].log.unshift({t: Date.now(), by: actor(), kind: "settled", d: Math.abs(net)});
+    data[payer].log = data[payer].log.slice(0, 24);
+    SIDES.forEach(scheduleWrite);
+    render();
+    toast("Settled up — both balances back to $0.");
+  }
+
+  function resetTrip(){
+    if (!confirm("Clear all credits, balances and activity for both of you?\n\nThis cannot be undone.")) return;
+    SIDES.forEach(function(side){
+      data[side] = blank();
+      scheduleWrite(side);
+    });
+    render();
+    toast("Trip reset.");
+  }
+
+  /* ---------- derived ---------- */
+
+  function allot(kind){
+    return kind === "snacks"
+      ? settings.nights * settings.snacksPerNight
+      : settings.nights * settings.qsPerNight;
+  }
+
+  function netBalance(){
+    return Math.round((data.joe.owed - data.em.owed) * 100) / 100;
+  }
+
+  function money(n){
+    return "$" + Math.abs(n).toFixed(2);
+  }
+
+  function settlementSentence(net){
+    return net > 0
+      ? "Em owes Joe " + money(net)
+      : "Joe owes Em " + money(net);
+  }
+
+  /* ---------- rendering ---------- */
+
+  var columns = document.getElementById("columns");
+  var built = false;
+
+  function buildColumns(){
+    SIDES.forEach(function(side){
+      var sec = document.createElement("section");
+      sec.className = "person";
+      sec.setAttribute("data-side", side);
+      sec.innerHTML =
+        '<header class="person-hd">' +
+          '<span class="dot"></span>' +
+          '<h2>' + NAMES[side] + '</h2>' +
+          '<span class="you-tag" id="tag-' + side + '" hidden>You</span>' +
+        '</header>' +
+        meterHTML(side, "snacks", "Snack credits") +
+        meterHTML(side, "qs", "Quick-service meals") +
+        '<div class="money">' +
+          '<div class="meter-top">' +
+            '<span class="meter-name">Owed to ' + NAMES[side] + '</span>' +
+          '</div>' +
+          '<div class="money-row">' +
+            '<span class="money-amt" id="owed-' + side + '">$0.00</span>' +
+            '<button type="button" class="step" data-act="money" data-side="' + side + '" data-dir="-1" ' +
+              'aria-label="Subtract from what ' + NAMES[side] + ' is owed">&minus;</button>' +
+            '<button type="button" class="step" data-act="money" data-side="' + side + '" data-dir="1" ' +
+              'aria-label="Add to what ' + NAMES[side] + ' is owed">+</button>' +
+          '</div>' +
+          '<div class="money-input">' +
+            '<span class="dollar">$</span>' +
+            '<input type="number" id="amt-' + side + '" min="0" step="0.01" inputmode="decimal" ' +
+              'placeholder="0.00" aria-label="Amount to add or subtract for ' + NAMES[side] + '">' +
+          '</div>' +
+          '<div class="chips">' +
+            [5,10,20,50].map(function(v){
+              return '<button type="button" class="chip" data-act="chip" data-side="' + side + '" data-v="' + v + '">$' + v + '</button>';
+            }).join("") +
+          '</div>' +
+        '</div>';
+      columns.appendChild(sec);
+    });
+    built = true;
+  }
+
+  function meterHTML(side, kind, label){
+    return '<div class="meter">' +
+        '<div class="meter-top">' +
+          '<span class="meter-name">' + label + '</span>' +
+          '<span class="meter-left" id="left-' + side + '-' + kind + '"></span>' +
+        '</div>' +
+        '<div class="meter-row">' +
+          '<span class="count" id="count-' + side + '-' + kind + '">0</span>' +
+          '<button type="button" class="step" data-act="credit" data-side="' + side + '" data-kind="' + kind + '" data-dir="-1" ' +
+            'aria-label="Remove one ' + label + ' from ' + NAMES[side] + '">&minus;</button>' +
+          '<button type="button" class="step" data-act="credit" data-side="' + side + '" data-kind="' + kind + '" data-dir="1" ' +
+            'aria-label="Add one ' + label + ' for ' + NAMES[side] + '">+</button>' +
+        '</div>' +
+        '<div class="track"><div class="fill" id="fill-' + side + '-' + kind + '" style="width:0%"></div></div>' +
+      '</div>';
+  }
+
+  function render(){
+    if (!built) buildColumns();
+
+    SIDES.forEach(function(side){
+      ["snacks","qs"].forEach(function(kind){
+        var used = data[side][kind];
+        var total = allot(kind);
+        var left = total - used;
+        document.getElementById("count-" + side + "-" + kind).textContent = used;
+        var leftEl = document.getElementById("left-" + side + "-" + kind);
+        if (total <= 0) {
+          leftEl.textContent = "no allotment set";
+          leftEl.classList.remove("over");
+        } else if (left < 0) {
+          leftEl.textContent = Math.abs(left) + " over";
+          leftEl.classList.add("over");
+        } else {
+          leftEl.textContent = left + " of " + total + " left";
+          leftEl.classList.remove("over");
+        }
+        var fill = document.getElementById("fill-" + side + "-" + kind);
+        var pct = total > 0 ? Math.min(100, (used / total) * 100) : 0;
+        fill.style.width = pct + "%";
+        fill.classList.toggle("over", total > 0 && used > total);
+
+        var minus = document.querySelector('.step[data-act="credit"][data-side="' + side + '"][data-kind="' + kind + '"][data-dir="-1"]');
+        if (minus) minus.disabled = used === 0;
+      });
+
+      document.getElementById("owed-" + side).textContent = "$" + data[side].owed.toFixed(2);
+      var mMinus = document.querySelector('.step[data-act="money"][data-side="' + side + '"][data-dir="-1"]');
+      if (mMinus) mMinus.disabled = data[side].owed === 0;
+
+      var tag = document.getElementById("tag-" + side);
+      if (tag) tag.hidden = me !== side;
+    });
+
+    var net = netBalance();
+    var verdict = document.getElementById("verdict");
+    var note = document.getElementById("verdict-note");
+    var settleBtn = document.getElementById("settle-btn");
+    if (net === 0) {
+      verdict.textContent = "All square";
+      note.textContent = data.joe.owed === 0 && data.em.owed === 0
+        ? "Nothing owed either way."
+        : "Both sides cancel out at " + money(data.joe.owed) + ".";
+      settleBtn.disabled = true;
+    } else {
+      var owes = net > 0 ? "em" : "joe";
+      var gets = net > 0 ? "joe" : "em";
+      verdict.innerHTML = NAMES[owes] + " owes " + NAMES[gets] + ' <span class="amt">' + money(net) + "</span>";
+      note.innerHTML = "Joe is owed <strong>" + money(data.joe.owed) + "</strong> &middot; Em is owed <strong>" + money(data.em.owed) + "</strong>";
+      settleBtn.disabled = false;
+    }
+
+    renderLog();
+    document.getElementById("f-nights").value = settings.nights;
+    document.getElementById("f-snacks").value = settings.snacksPerNight;
+    document.getElementById("f-qs").value = settings.qsPerNight;
+
+    SIDES.forEach(function(side){
+      document.getElementById("me-" + side).setAttribute("aria-pressed", me === side ? "true" : "false");
+    });
+  }
+
+  var KIND_WORDS = {
+    snacks: {add:"used a snack credit", sub:"gave back a snack credit"},
+    qs: {add:"used a quick-service meal", sub:"gave back a quick-service meal"},
+    money: {add:"covered something", sub:"knocked money off"},
+    settled: {add:"settled up", sub:"settled up"}
+  };
+
+  function renderLog(){
+    var all = [];
+    SIDES.forEach(function(side){
+      data[side].log.forEach(function(e){
+        all.push({side:side, t:num(e.t,0), by:e.by === "em" ? "em" : "joe", kind:e.kind, d:num(e.d,0)});
+      });
+    });
+    all.sort(function(a,b){ return b.t - a.t; });
+    all = all.slice(0, 14);
+
+    var ul = document.getElementById("log");
+    if (!all.length) {
+      ul.innerHTML = '<li class="empty">Nothing logged yet. Tap + on a column as you use a credit or cover a bill.</li>';
+      return;
+    }
+    ul.innerHTML = all.map(function(e){
+      var words = KIND_WORDS[e.kind] || KIND_WORDS.money;
+      var what, delta;
+      if (e.kind === "settled") {
+        what = "settled up with " + NAMES[e.side === "joe" ? "em" : "joe"];
+        delta = money(e.d);
+      } else if (e.kind === "money") {
+        var dir = e.d >= 0 ? "added to" : "took off";
+        what = dir + " " + NAMES[e.side] + "&rsquo;s balance";
+        delta = (e.d >= 0 ? "+" : "−") + money(e.d);
+      } else {
+        what = (e.d >= 0 ? words.add : words.sub) + (e.side === e.by ? "" : " for " + NAMES[e.side]);
+        delta = (e.d >= 0 ? "+" : "−") + Math.abs(e.d);
+      }
+      return '<li>' +
+        '<span class="who ' + e.by + '">' + NAMES[e.by] + '</span>' +
+        '<span class="what">' + what + '</span>' +
+        '<span class="delta">' + delta + '</span>' +
+        '<span class="when">' + when(e.t) + '</span>' +
+      '</li>';
+    }).join("");
+  }
+
+  function when(t){
+    if (!t) return "";
+    var d = new Date(t);
+    var today = new Date();
+    var sameDay = d.toDateString() === today.toDateString();
+    if (sameDay) {
+      return d.toLocaleTimeString([], {hour:"numeric", minute:"2-digit"}).toLowerCase().replace(" ", "");
+    }
+    return d.toLocaleDateString([], {month:"short", day:"numeric"});
+  }
+
+  /* ---------- toast ---------- */
+
+  var toastEl = document.getElementById("toast");
+  var toastTimer;
+  function toast(msg){
+    toastEl.textContent = msg;
+    toastEl.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ toastEl.classList.remove("show"); }, 3400);
+  }
+
+  /* ---------- events ---------- */
+
+  columns.addEventListener("click", function(ev){
+    var btn = ev.target.closest("button");
+    if (!btn) return;
+    var side = btn.getAttribute("data-side");
+    var act = btn.getAttribute("data-act");
+    if (act === "credit") {
+      bumpCredit(side, btn.getAttribute("data-kind"), parseInt(btn.getAttribute("data-dir"), 10));
+    } else if (act === "money") {
+      var input = document.getElementById("amt-" + side);
+      var amount = parseFloat(input.value);
+      if (!isFinite(amount) || amount <= 0) {
+        input.focus();
+        toast("Type an amount first, then tap + or −.");
+        return;
+      }
+      bumpMoney(side, amount * parseInt(btn.getAttribute("data-dir"), 10));
+      input.value = "";
+    } else if (act === "chip") {
+      document.getElementById("amt-" + side).value = btn.getAttribute("data-v");
+    }
+  });
+
+  SIDES.forEach(function(side){
+    document.getElementById("me-" + side).addEventListener("click", function(){
+      me = side;
+      try { localStorage.setItem("ddl:me", side); } catch(e){}
+      render();
+    });
+  });
+
+  document.getElementById("settle-btn").addEventListener("click", settleUp);
+  document.getElementById("reset-btn").addEventListener("click", resetTrip);
+
+  [["f-nights","nights"],["f-snacks","snacksPerNight"],["f-qs","qsPerNight"]].forEach(function(pair){
+    document.getElementById(pair[0]).addEventListener("change", function(){
+      var v = Math.max(pair[1] === "nights" ? 1 : 0, Math.round(num(this.value, DEFAULT_SETTINGS[pair[1]])));
+      settings[pair[1]] = v;
+      this.value = v;
+      writeSettings();
+      render();
+    });
+  });
+
+  /* ---------- boot ---------- */
+
+  try { me = localStorage.getItem("ddl:me"); } catch(e){}
+  if (SIDES.indexOf(me) === -1) me = null;
+
+  var statusEl = document.getElementById("status");
+  var statusText = document.getElementById("status-text");
+
+  function setStatus(text, live){
+    statusText.textContent = text;
+    statusEl.classList.toggle("off", !live);
+  }
+
+  render();
+
+  function goLocal(){
+    setStatus("This device only", false);
+    var s = readLocal("trip/settings");
+    if (s) adoptSettings(s);
+    SIDES.forEach(function(side){
+      var d = readLocal("trip/" + side);
+      if (d) adoptSide(side, d);
+    });
+    render();
+  }
+
+  if (window.claude && typeof window.claude.use === "function") {
+    window.claude.use("db").then(function(store){
+      if (!store) { goLocal(); return; }
+      db = store;
+      setStatus("Shared — live", true);
+
+      db.doc("trip/settings").onSnapshot(function(snap){
+        if (pending.settings) return;
+        if (snap.exists) { adoptSettings(snap.data()); render(); }
+      }, function(){ setStatus("Reconnecting…", false); });
+
+      SIDES.forEach(function(side){
+        db.doc("trip/" + side).onSnapshot(function(snap){
+          if (pending[side]) return;
+          if (snap.exists) { adoptSide(side, snap.data()); render(); }
+        }, function(err){
+          setStatus(err && err.code === "revoked" ? "Access ended" : "Reconnecting…", false);
+        });
+      });
+    }, goLocal);
+  } else {
+    goLocal();
+  }
+})();
+</script>
