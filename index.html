@@ -334,6 +334,19 @@ tr.is-last .d-label{font-weight:600}
   margin-left:7px;white-space:nowrap;vertical-align:1px;
 }
 
+/* ---------- gift card ---------- */
+.money.card{
+  background:var(--surface-2);
+  margin:0 -18px -18px;
+  padding:16px 18px 18px;
+  border-radius:0 0 5px 5px;
+  border-top:1px solid var(--line-strong);
+}
+.money.card .track{background:var(--line-strong)}
+.money.card input[type="number"]{background:var(--surface)}
+.money-amt.low{color:var(--warn)}
+.fill.low{background:var(--warn)}
+
 @media (max-width:480px){
   .pace-row{flex-wrap:wrap;gap:3px 12px}
   .pace-row .sofar{flex:1 1 100%;text-align:left;padding-left:46px}
@@ -433,9 +446,13 @@ tr.is-last .d-label{font-weight:600}
           <label for="f-last">Meals on go-home day</label>
           <input type="number" id="f-last" min="0" max="10" step="1">
         </div>
+        <div class="field">
+          <label for="f-gift">Gift card each</label>
+          <input type="number" id="f-gift" min="0" step="0.01">
+        </div>
       </div>
       <div class="setup-foot">
-        <p>Credits are allotted per night, but you eat on the go-home day too &mdash; that last day is held back from the daily pace so it doesn&rsquo;t leave you short.</p>
+        <p>Credits are allotted per night, but you eat on the go-home day too &mdash; that last day is held back from the daily pace so it doesn&rsquo;t leave you short. Changing the gift card amount reloads both cards; to top up just one, use + on that card.</p>
         <button type="button" class="btn btn-quiet" id="reset-btn">Reset trip</button>
       </div>
     </div>
@@ -455,18 +472,20 @@ tr.is-last .d-label{font-weight:600}
 
   var SIDES = ["joe","em"];
   var NAMES = {joe:"Joe", em:"Em"};
-  var DEFAULT_SETTINGS = {snacksPerNight:1, qsPerNight:2, lastDayQs:2, lastDaySnacks:0};
+  var DEFAULT_SETTINGS = {snacksPerNight:1, qsPerNight:2, lastDayQs:2, lastDaySnacks:0, giftStart:100};
   var DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
   var MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
-  var settings = {start:"", end:"", snacksPerNight:1, qsPerNight:2, lastDayQs:2, lastDaySnacks:0};
+  var settings = {start:"", end:"", snacksPerNight:1, qsPerNight:2, lastDayQs:2, lastDaySnacks:0, giftStart:100};
   var data = {joe:blank(), em:blank()};
   var me = null;
   var db = null;
   var pending = {joe:0, em:0, settings:0};
   var timers = {};
 
-  function blank(){ return {snacks:0, qs:0, owed:0, log:[], days:{}}; }
+  /* gift/giftLoaded stay null until the card is touched, so they pick up
+     whatever "Gift card each" is set to. */
+  function blank(){ return {snacks:0, qs:0, owed:0, gift:null, giftLoaded:null, log:[], days:{}}; }
 
   /* ---------- dates ---------- */
 
@@ -527,6 +546,8 @@ tr.is-last .d-label{font-weight:600}
         snacks: data[side].snacks,
         qs: data[side].qs,
         owed: data[side].owed,
+        gift: data[side].gift,
+        giftLoaded: data[side].giftLoaded,
         log: data[side].log,
         days: data[side].days
       }).then(function(){ pending[side] = 0; }, function(){ pending[side] = 0; });
@@ -544,7 +565,8 @@ tr.is-last .d-label{font-weight:600}
         snacksPerNight: settings.snacksPerNight,
         qsPerNight: settings.qsPerNight,
         lastDayQs: settings.lastDayQs,
-        lastDaySnacks: settings.lastDaySnacks
+        lastDaySnacks: settings.lastDaySnacks,
+        giftStart: settings.giftStart
       }).then(function(){ pending.settings = 0; }, function(){ pending.settings = 0; });
     }, 400);
   }
@@ -567,7 +589,8 @@ tr.is-last .d-label{font-weight:600}
         days[k] = {
           s: Math.max(0, Math.round(num(r.s, 0))),
           q: Math.max(0, Math.round(num(r.q, 0))),
-          m: Math.round(num(r.m, 0) * 100) / 100
+          m: Math.round(num(r.m, 0) * 100) / 100,
+          g: Math.round(num(r.g, 0) * 100) / 100
         };
       });
     } else if (Array.isArray(d.log)) {
@@ -576,20 +599,28 @@ tr.is-last .d-label{font-weight:600}
         var t = num(e && e.t, 0);
         if (!t) return;
         var k = isoDay(new Date(t));
-        var r = days[k] || (days[k] = {s:0, q:0, m:0});
+        var r = days[k] || (days[k] = {s:0, q:0, m:0, g:0});
         var delta = num(e.d, 0);
         if (e.kind === "snacks") r.s = Math.max(0, r.s + delta);
         else if (e.kind === "qs") r.q = Math.max(0, r.q + delta);
         else if (e.kind === "money") r.m = Math.round((r.m + delta) * 100) / 100;
+        else if (e.kind === "card") r.g = Math.round((r.g + delta) * 100) / 100;
       });
     }
     data[side] = {
       snacks: Math.max(0, Math.round(num(d.snacks, 0))),
       qs: Math.max(0, Math.round(num(d.qs, 0))),
       owed: Math.round(num(d.owed, 0) * 100) / 100,
+      gift: cashOrNull(d.gift),
+      giftLoaded: cashOrNull(d.giftLoaded),
       log: Array.isArray(d.log) ? d.log.slice(0, 30) : [],
       days: days
     };
+  }
+
+  function cashOrNull(v){
+    var n = typeof v === "number" ? v : parseFloat(v);
+    return isFinite(n) ? Math.max(0, Math.round(n * 100) / 100) : null;
   }
 
   function adoptSettings(d){
@@ -604,7 +635,8 @@ tr.is-last .d-label{font-weight:600}
       snacksPerNight: clampInt(d.snacksPerNight, DEFAULT_SETTINGS.snacksPerNight, 0, 10),
       qsPerNight: clampInt(d.qsPerNight, DEFAULT_SETTINGS.qsPerNight, 0, 10),
       lastDayQs: clampInt(d.lastDayQs, DEFAULT_SETTINGS.lastDayQs, 0, 10),
-      lastDaySnacks: clampInt(d.lastDaySnacks, DEFAULT_SETTINGS.lastDaySnacks, 0, 10)
+      lastDaySnacks: clampInt(d.lastDaySnacks, DEFAULT_SETTINGS.lastDaySnacks, 0, 10),
+      giftStart: Math.max(0, Math.round(num(d.giftStart, DEFAULT_SETTINGS.giftStart) * 100) / 100)
     };
   }
 
@@ -615,8 +647,9 @@ tr.is-last .d-label{font-weight:600}
   function touchDay(side, field, delta){
     var k = today();
     var rec = data[side].days[k];
-    if (!rec) { rec = {s:0, q:0, m:0}; data[side].days[k] = rec; }
-    rec[field] = field === "m"
+    if (!rec) { rec = {s:0, q:0, m:0, g:0}; data[side].days[k] = rec; }
+    if (typeof rec.g !== "number") rec.g = 0;
+    rec[field] = (field === "m" || field === "g")
       ? Math.round((rec[field] + delta) * 100) / 100
       : Math.max(0, rec[field] + delta);
   }
@@ -645,6 +678,26 @@ tr.is-last .d-label{font-weight:600}
     data[side].owed = next;
     touchDay(side, "m", applied);
     logEntry(side, "money", applied);
+    scheduleWrite(side);
+    render();
+  }
+
+  /* Negative spends from the card; positive tops it up, which raises the
+     loaded total too so "spent so far" stays honest. */
+  function bumpCard(side, amount){
+    if (!amount || !isFinite(amount)) return;
+    var left = cardLeft(side);
+    var next = Math.round((left + amount) * 100) / 100;
+    if (next < 0) {
+      toast("That's more than " + NAMES[side] + "'s card has left — spending the last " + money(left) + ".");
+      next = 0;
+    }
+    var applied = Math.round((next - left) * 100) / 100;
+    if (!applied) return;
+    data[side].gift = next;
+    data[side].giftLoaded = Math.round((cardLoaded(side) + Math.max(0, applied)) * 100) / 100;
+    touchDay(side, "g", applied);
+    logEntry(side, "card", applied);
     scheduleWrite(side);
     render();
   }
@@ -681,6 +734,15 @@ tr.is-last .d-label{font-weight:600}
   }
 
   function remaining(side, kind){ return allot(kind) - data[side][kind]; }
+
+  function cardLoaded(side){
+    var v = data[side].giftLoaded;
+    return v === null ? settings.giftStart : v;
+  }
+  function cardLeft(side){
+    var v = data[side].gift;
+    return v === null ? settings.giftStart : v;
+  }
 
   function netBalance(){
     return Math.round((data.joe.owed - data.em.owed) * 100) / 100;
@@ -741,6 +803,25 @@ tr.is-last .d-label{font-weight:600}
               return '<button type="button" class="chip" data-act="chip" data-side="' + side + '" data-v="' + v + '">$' + v + '</button>';
             }).join("") +
           '</div>' +
+        '</div>' +
+        '<div class="money card">' +
+          '<div class="meter-top">' +
+            '<span class="meter-name">Gift card</span>' +
+            '<span class="meter-left" id="cardspent-' + side + '"></span>' +
+          '</div>' +
+          '<div class="money-row">' +
+            '<span class="money-amt" id="card-' + side + '">$0.00</span>' +
+            '<button type="button" class="step" data-act="card" data-side="' + side + '" data-dir="-1" ' +
+              'aria-label="Spend from ' + NAMES[side] + '&apos;s gift card">&minus;</button>' +
+            '<button type="button" class="step" data-act="card" data-side="' + side + '" data-dir="1" ' +
+              'aria-label="Add to ' + NAMES[side] + '&apos;s gift card">+</button>' +
+          '</div>' +
+          '<div class="track"><div class="fill" id="cardfill-' + side + '" style="width:100%"></div></div>' +
+          '<div class="money-input">' +
+            '<span class="dollar">$</span>' +
+            '<input type="number" id="cardamt-' + side + '" min="0" step="0.01" inputmode="decimal" ' +
+              'placeholder="0.00" aria-label="Amount to spend from or add to ' + NAMES[side] + '&apos;s gift card">' +
+          '</div>' +
         '</div>';
       columns.appendChild(sec);
     });
@@ -796,6 +877,8 @@ tr.is-last .d-label{font-weight:600}
       var mMinus = document.querySelector('.step[data-act="money"][data-side="' + side + '"][data-dir="-1"]');
       if (mMinus) mMinus.disabled = data[side].owed === 0;
 
+      renderCard(side);
+
       var tag = document.getElementById("tag-" + side);
       if (tag) tag.hidden = me !== side;
     });
@@ -828,10 +911,33 @@ tr.is-last .d-label{font-weight:600}
     document.getElementById("f-snacks").value = settings.snacksPerNight;
     document.getElementById("f-qs").value = settings.qsPerNight;
     document.getElementById("f-last").value = settings.lastDayQs;
+    document.getElementById("f-gift").value = settings.giftStart.toFixed(2);
 
     SIDES.forEach(function(side){
       document.getElementById("me-" + side).setAttribute("aria-pressed", me === side ? "true" : "false");
     });
+  }
+
+  function renderCard(side){
+    var left = cardLeft(side);
+    var loaded = cardLoaded(side);
+    var spent = Math.round((loaded - left) * 100) / 100;
+    var low = loaded > 0 && left / loaded <= 0.15;
+
+    var amtEl = document.getElementById("card-" + side);
+    amtEl.textContent = "$" + left.toFixed(2);
+    amtEl.classList.toggle("low", low);
+
+    document.getElementById("cardspent-" + side).textContent = spent > 0
+      ? money(spent) + " of " + money(loaded) + " spent"
+      : money(loaded) + " loaded";
+
+    var fill = document.getElementById("cardfill-" + side);
+    fill.style.width = (loaded > 0 ? Math.max(0, Math.min(100, (left / loaded) * 100)) : 0) + "%";
+    fill.classList.toggle("low", low);
+
+    var minus = document.querySelector('.step[data-act="card"][data-side="' + side + '"][data-dir="-1"]');
+    if (minus) minus.disabled = left === 0;
   }
 
   /* Today's allowance: spread what's left across the days still to come,
@@ -873,10 +979,14 @@ tr.is-last .d-label{font-weight:600}
         if (remQ < settings.lastDayQs || remS < settings.lastDaySnacks) short = true;
       }
 
-      var used = data[side].days[now] || {s:0, q:0, m:0};
+      var used = data[side].days[now] || {s:0, q:0, m:0, g:0};
+      var daysLeft = over ? 0 : toEnd + 1;
+      var cardLeftNow = cardLeft(side);
+      var cardPerDay = daysLeft > 0 ? cardLeftNow / daysLeft : 0;
       var allowText = over
         ? (remS > 0 || remQ > 0 ? fmtNum(Math.max(0,remS)) + " snacks and " + fmtNum(Math.max(0,remQ)) + " meals went unused" : "everything used")
-        : plural(allowS, "snack", "snacks") + " · " + plural(allowQ, "meal", "meals");
+        : plural(allowS, "snack", "snacks") + " · " + plural(allowQ, "meal", "meals") +
+          (cardLeftNow > 0 ? " · " + money(cardPerDay) + " card" : "");
 
       return '<div class="pace-row" data-side="' + side + '">' +
           '<span class="who">' + NAMES[side] + '</span>' +
@@ -922,18 +1032,20 @@ tr.is-last .d-label{font-weight:600}
   }
 
   function cellHTML(side, iso){
-    var r = data[side].days[iso] || {s:0, q:0, m:0};
+    var r = data[side].days[iso] || {s:0, q:0, m:0, g:0};
     var s = r.s ? String(r.s) : '<span class="zero">0</span>';
     var q = r.q ? String(r.q) : '<span class="zero">0</span>';
-    return '<td class="num"><span class="cell">' + s + " / " + q + "</span>" +
-      (r.m ? '<span class="cash">' + (r.m > 0 ? "+" : "−") + money(r.m) + "</span>" : "") +
-    "</td>";
+    var extra = "";
+    if (r.m) extra += '<span class="cash">owed ' + (r.m > 0 ? "+" : "−") + money(r.m) + "</span>";
+    if (r.g) extra += '<span class="cash">card ' + (r.g > 0 ? "+" : "−") + money(r.g) + "</span>";
+    return '<td class="num"><span class="cell">' + s + " / " + q + "</span>" + extra + "</td>";
   }
 
   var KIND_WORDS = {
     snacks: {add:"used a snack credit", sub:"gave back a snack credit"},
     qs: {add:"used a quick-service meal", sub:"gave back a quick-service meal"},
     money: {add:"covered something", sub:"knocked money off"},
+    card: {add:"topped up the gift card", sub:"spent from the gift card"},
     settled: {add:"settled up", sub:"settled up"}
   };
 
@@ -958,6 +1070,9 @@ tr.is-last .d-label{font-weight:600}
       if (e.kind === "settled") {
         what = "settled up with " + NAMES[e.side === "joe" ? "em" : "joe"];
         delta = money(e.d);
+      } else if (e.kind === "card") {
+        what = (e.d >= 0 ? "topped up" : "spent from") + " " + NAMES[e.side] + "&rsquo;s gift card";
+        delta = (e.d >= 0 ? "+" : "−") + money(e.d);
       } else if (e.kind === "money") {
         what = (e.d >= 0 ? "added to" : "took off") + " " + NAMES[e.side] + "&rsquo;s balance";
         delta = (e.d >= 0 ? "+" : "−") + money(e.d);
@@ -1013,6 +1128,16 @@ tr.is-last .d-label{font-weight:600}
       }
       bumpMoney(side, amount * parseInt(btn.getAttribute("data-dir"), 10));
       input.value = "";
+    } else if (act === "card") {
+      var cardInput = document.getElementById("cardamt-" + side);
+      var spend = parseFloat(cardInput.value);
+      if (!isFinite(spend) || spend <= 0) {
+        cardInput.focus();
+        toast("Type an amount first, then tap − to spend or + to top up.");
+        return;
+      }
+      bumpCard(side, spend * parseInt(btn.getAttribute("data-dir"), 10));
+      cardInput.value = "";
     } else if (act === "chip") {
       document.getElementById("amt-" + side).value = btn.getAttribute("data-v");
     }
@@ -1042,6 +1167,21 @@ tr.is-last .d-label{font-weight:600}
       writeSettings();
       render();
     });
+  });
+
+  document.getElementById("f-gift").addEventListener("change", function(){
+    var v = Math.max(0, Math.round(num(this.value, settings.giftStart) * 100) / 100);
+    if (v === settings.giftStart) { render(); return; }
+    if (!confirm("Set both gift cards to " + money(v) + "?\n\nThis replaces the balance on both cards.")) { render(); return; }
+    settings.giftStart = v;
+    SIDES.forEach(function(side){
+      data[side].gift = v;
+      data[side].giftLoaded = v;
+      scheduleWrite(side);
+    });
+    writeSettings();
+    render();
+    toast("Both gift cards set to " + money(v) + ".");
   });
 
   [["f-snacks","snacksPerNight"],["f-qs","qsPerNight"],["f-last","lastDayQs"]].forEach(function(pair){
