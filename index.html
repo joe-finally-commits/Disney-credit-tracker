@@ -848,7 +848,6 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;line-height:1.7}
           '<button type="button" class="btn use" data-act="credit" data-side="' + side + '" data-kind="' + kind + '" data-dir="1" ' +
             'aria-label="Use one ' + unit + ' for ' + NAMES[side] + '">Use one</button>' +
         '</div>' +
-        '<div class="pips" id="pips-' + side + '-' + kind + '"></div>' +
       '</div>';
   }
 
@@ -867,9 +866,6 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;line-height:1.7}
         var leftEl = document.getElementById("left-" + side + "-" + kind);
         leftEl.textContent = total <= 0 ? used + " used" : used + " of " + total + " used";
         leftEl.classList.toggle("over", total > 0 && used > total);
-
-        renderPips("pips-" + side + "-" + kind, side, kind, used, total,
-                   "for the trip", "No allotment set — see Trip setup.");
 
         var back = document.querySelector('[data-act="credit"][data-side="' + side + '"][data-kind="' + kind + '"][data-dir="-1"]');
         if (back) back.disabled = used === 0;
