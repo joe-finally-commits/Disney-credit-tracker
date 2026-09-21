@@ -155,7 +155,6 @@ button{font-family:inherit}
 .pace-group{display:flex;flex-direction:column;gap:7px}
 .pace-label{font-size:10px;font-weight:700;letter-spacing:.11em;text-transform:uppercase;color:var(--muted)}
 .pace-label.short{color:var(--warn)}
-.pace-cash{font-family:var(--display);font-size:20px;font-weight:600;font-variant-numeric:tabular-nums;line-height:28px}
 .pace-text{font-size:14px;color:var(--muted)}
 .pace-note{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:12px;line-height:1.55}
 .pace-note strong{color:var(--ink);font-weight:700}
@@ -248,6 +247,16 @@ input[readonly]{color:var(--muted);background:transparent;cursor:default}
 .track{height:8px;border-radius:5px;background:var(--surface-2);overflow:hidden;border:1px solid var(--line-strong)}
 .fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--hue-lift),var(--hue));transition:width .3s ease}
 .fill.low{background:linear-gradient(90deg,var(--warn-lift),var(--warn))}
+.card-hd{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.card-title{
+  font-family:var(--display);font-size:16.5px;font-weight:600;color:var(--hue);
+  display:inline-flex;align-items:center;gap:8px;
+}
+.card-title::before{
+  content:"";width:13px;height:13px;flex:none;
+  background:var(--gold-bright);
+  clip-path:polygon(50% 0,58% 42%,100% 50%,58% 58%,50% 100%,42% 58%,0 50%,42% 42%);
+}
 .money.card{
   background:var(--gold-soft);
   margin:0 -18px -18px;
@@ -797,8 +806,8 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;line-height:1.7}
           '</div>' +
         '</div>' +
         '<div class="money card">' +
-          '<div class="meter-top">' +
-            '<span class="meter-name">Gift card</span>' +
+          '<div class="card-hd">' +
+            '<span class="card-title">' + NAMES[side] + '&rsquo;s gift card</span>' +
             '<span class="meter-left" id="cardspent-' + side + '"></span>' +
           '</div>' +
           '<div class="money-row">' +
@@ -984,10 +993,6 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;line-height:1.7}
               '<span class="pace-label" id="tlab-' + side + '-qs">Meals</span>' +
               '<div class="pips small" id="tpips-' + side + '-qs"></div>' +
             '</div>' +
-            '<div class="pace-group">' +
-              '<span class="pace-label">Gift card</span>' +
-              '<span class="pace-cash" id="tcard-' + side + '"></span>' +
-            '</div>' +
           '</div>' +
           '<p class="pace-text" id="ptext-' + side + '" hidden></p>' +
         '</div>';
@@ -1041,12 +1046,6 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;line-height:1.7}
         if (remQ < settings.lastDayQs || remS < settings.lastDaySnacks) short = true;
       }
 
-      var spentToday = Math.max(0, -used.g);
-      var cardNow = cardLeft(side);
-      var daysLeft = over ? 0 : toEnd + 1;
-      var cardShare = daysLeft > 0 ? (cardNow + spentToday) / daysLeft : 0;
-      var cardLeftToday = Math.max(0, cardShare - spentToday);
-
       document.getElementById("sofar-" + side).textContent =
         countNoun(Math.max(0, remS), "snack", "snacks") + " · " +
         countNoun(Math.max(0, remQ), "meal", "meals") + " left overall";
@@ -1074,7 +1073,6 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;line-height:1.7}
       renderPips("tpips-" + side + "-qs", side, "qs", used.q, shareQ,
                  "today", "None today");
       document.getElementById("tlab-" + side + "-qs").classList.toggle("short", short);
-      document.getElementById("tcard-" + side).textContent = money(cardLeftToday);
     });
 
     if (over) {
@@ -1119,7 +1117,6 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;line-height:1.7}
     var q = r.q ? String(r.q) : '<span class="zero">0</span>';
     var extra = "";
     if (r.m) extra += '<span class="cash">owed ' + (r.m > 0 ? "+" : "−") + money(r.m) + "</span>";
-    if (r.g) extra += '<span class="cash">card ' + (r.g > 0 ? "+" : "−") + money(r.g) + "</span>";
     return '<td class="num"><span class="cell">' + s + " / " + q + "</span>" + extra + "</td>";
   }
 
