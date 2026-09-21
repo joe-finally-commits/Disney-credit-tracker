@@ -143,13 +143,20 @@ button{font-family:inherit}
 .pace-hd h3{font-size:17px;font-weight:600}
 .pace-when{font-size:11px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
 .pace-rows{display:flex;flex-direction:column}
-.pace-row{display:flex;align-items:baseline;gap:12px;padding:11px 0;border-top:1px solid var(--line)}
-.pace-row .who{font-family:var(--display);font-weight:600;font-size:15px;flex:none;min-width:38px}
+.pace-row{display:flex;flex-direction:column;gap:11px;padding:14px 0;border-top:1px solid var(--line)}
+.pace-row[data-side="joe"]{--hue:var(--joe);--hue-soft:var(--joe-soft);--hue-lift:var(--joe-lift)}
+.pace-row[data-side="em"]{--hue:var(--em);--hue-soft:var(--em-soft);--hue-lift:var(--em-lift)}
+.pace-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.pace-row .who{font-family:var(--display);font-weight:600;font-size:16px;flex:none}
 .pace-row[data-side="joe"] .who{color:var(--joe)}
 .pace-row[data-side="em"] .who{color:var(--em)}
-.pace-row .allow{font-size:14.5px;font-weight:700;font-variant-numeric:tabular-nums;flex:1;min-width:0}
-.pace-row .allow.short{color:var(--warn)}
-.pace-row .sofar{font-size:12px;color:var(--muted);text-align:right;flex:none;white-space:nowrap;font-variant-numeric:tabular-nums;font-weight:600}
+.pace-row .sofar{font-size:12px;color:var(--muted);flex:none;font-variant-numeric:tabular-nums;font-weight:600}
+.pace-groups{display:flex;flex-wrap:wrap;gap:14px 24px;align-items:flex-end}
+.pace-group{display:flex;flex-direction:column;gap:7px}
+.pace-label{font-size:10px;font-weight:700;letter-spacing:.11em;text-transform:uppercase;color:var(--muted)}
+.pace-label.short{color:var(--warn)}
+.pace-cash{font-family:var(--display);font-size:20px;font-weight:600;font-variant-numeric:tabular-nums;line-height:28px}
+.pace-text{font-size:14px;color:var(--muted)}
 .pace-note{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:12px;line-height:1.55}
 .pace-note strong{color:var(--ink);font-weight:700}
 
@@ -190,6 +197,8 @@ button{font-family:inherit}
 
 /* ---------- the punch card ---------- */
 .pips{display:flex;flex-wrap:wrap;gap:6px}
+.pips.small{gap:5px}
+.pips.small .pip{flex:0 0 28px;width:28px;min-width:28px;max-width:28px;height:28px}
 .pip{
   flex:1 1 22px;min-width:22px;max-width:44px;height:28px;padding:0;
   border-radius:7px;cursor:pointer;
@@ -329,10 +338,6 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;line-height:1.7}
   .pip:hover{transform:none}
 }
 
-@media (max-width:480px){
-  .pace-row{flex-wrap:wrap;gap:3px 12px}
-  .pace-row .sofar{flex:1 1 100%;text-align:left;padding-left:50px}
-}
 @media (max-width:720px){
   .columns{grid-template-columns:1fr}
   .wrap{padding-block:24px 48px}
@@ -854,7 +859,8 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;line-height:1.7}
         leftEl.textContent = total <= 0 ? used + " used" : used + " of " + total + " used";
         leftEl.classList.toggle("over", total > 0 && used > total);
 
-        renderPips(side, kind, used, total);
+        renderPips("pips-" + side + "-" + kind, side, kind, used, total,
+                   "for the trip", "No allotment set — see Trip setup.");
 
         var back = document.querySelector('[data-act="credit"][data-side="' + side + '"][data-kind="' + kind + '"][data-dir="-1"]');
         if (back) back.disabled = used === 0;
@@ -907,14 +913,14 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;line-height:1.7}
 
   /* One block per credit: filled means spent. Tapping a block spends or
      gives back exactly one, so a stray tap is never worse than one credit. */
-  function renderPips(side, kind, used, total){
-    var host = document.getElementById("pips-" + side + "-" + kind);
+  function renderPips(hostId, side, kind, used, total, scope, emptyMsg){
+    var host = document.getElementById(hostId);
     if (!host) return;
     var noun = kind === "snacks" ? "snack credit" : "quick-service meal";
     var count = Math.min(60, Math.max(total, used));
 
     if (count === 0) {
-      host.innerHTML = '<span class="pips-none">No allotment set — see Trip setup.</span>';
+      host.innerHTML = '<span class="pips-none">' + emptyMsg + "</span>";
       return;
     }
     if (host.childElementCount !== count || !host.firstElementChild ||
@@ -931,7 +937,7 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;line-height:1.7}
       var spent = j < used;
       pip.className = "pip" + (spent ? (j >= total ? " over" : " used") : "");
       pip.setAttribute("aria-label",
-        NAMES[side] + " " + noun + " " + (j + 1) + " of " + count + ", " +
+        NAMES[side] + " " + noun + " " + (j + 1) + " of " + count + " " + scope + ", " +
         (spent ? "used — tap to give it back" : "unused — tap to use it"));
     }
   }
@@ -960,6 +966,35 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;line-height:1.7}
 
   /* Today's allowance: spread what's left across the days still to come,
      holding back the go-home day's meals so they're still there on Saturday. */
+  var paceBuilt = false;
+
+  function buildPaceRows(){
+    document.getElementById("pace-rows").innerHTML = SIDES.map(function(side){
+      return '<div class="pace-row" data-side="' + side + '">' +
+          '<div class="pace-head">' +
+            '<span class="who">' + NAMES[side] + '</span>' +
+            '<span class="sofar" id="sofar-' + side + '"></span>' +
+          '</div>' +
+          '<div class="pace-groups" id="groups-' + side + '">' +
+            '<div class="pace-group">' +
+              '<span class="pace-label" id="tlab-' + side + '-snacks">Snacks</span>' +
+              '<div class="pips small" id="tpips-' + side + '-snacks"></div>' +
+            '</div>' +
+            '<div class="pace-group">' +
+              '<span class="pace-label" id="tlab-' + side + '-qs">Meals</span>' +
+              '<div class="pips small" id="tpips-' + side + '-qs"></div>' +
+            '</div>' +
+            '<div class="pace-group">' +
+              '<span class="pace-label">Gift card</span>' +
+              '<span class="pace-cash" id="tcard-' + side + '"></span>' +
+            '</div>' +
+          '</div>' +
+          '<p class="pace-text" id="ptext-' + side + '" hidden></p>' +
+        '</div>';
+    }).join("");
+    paceBuilt = true;
+  }
+
   function renderPace(){
     var now = today();
     var toEnd = dayDiff(now, settings.end);       // days from today to the go-home day
@@ -981,29 +1016,30 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;line-height:1.7}
         ? longDay(settings.start) + " — " + longDay(settings.end)
         : longDay(now) + " · " + (toEnd === 0 ? "go-home day" : toEnd + (toEnd === 1 ? " day to go" : " days to go"));
 
-    rows.innerHTML = SIDES.map(function(side){
+    if (!paceBuilt) buildPaceRows();
+
+    SIDES.forEach(function(side){
       var used = data[side].days[now] || {s:0, q:0, m:0, g:0};
       var remS = remaining(side, "snacks");
       var remQ = remaining(side, "qs");
-      /* Today's share is worked out from the balance at the START of today,
-         otherwise subtracting what's been used already counts it twice. */
+      /* Today's share comes off the balance at the START of today, otherwise
+         subtracting what's already been used counts it twice. */
       var startS = remS + used.s;
       var startQ = remQ + used.q;
-      var allowS, allowQ, short = false;
+      var shareS, shareQ, short = false;
 
       if (over) {
-        allowS = 0; allowQ = 0;
+        shareS = 0; shareQ = 0;
       } else if (lastDay) {
-        allowS = Math.max(0, startS);
-        allowQ = Math.max(0, startQ);
+        shareS = Math.max(0, startS);
+        shareQ = Math.max(0, startQ);
       } else {
-        allowS = Math.max(0, (startS - settings.lastDaySnacks) / spread);
-        allowQ = Math.max(0, (startQ - settings.lastDayQs) / spread);
+        /* Whole blocks only — you can't eat 0.6 of a meal. Rounding here is
+           safe because the split is recomputed from scratch every day. */
+        shareS = Math.round(Math.max(0, startS - settings.lastDaySnacks) / spread);
+        shareQ = Math.round(Math.max(0, startQ - settings.lastDayQs) / spread);
         if (remQ < settings.lastDayQs || remS < settings.lastDaySnacks) short = true;
       }
-
-      var leftS = Math.max(0, allowS - used.s);
-      var leftQ = Math.max(0, allowQ - used.q);
 
       var spentToday = Math.max(0, -used.g);
       var cardNow = cardLeft(side);
@@ -1011,17 +1047,35 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;line-height:1.7}
       var cardShare = daysLeft > 0 ? (cardNow + spentToday) / daysLeft : 0;
       var cardLeftToday = Math.max(0, cardShare - spentToday);
 
-      var allowText = over
-        ? (remS > 0 || remQ > 0 ? fmtNum(Math.max(0,remS)) + " snacks and " + fmtNum(Math.max(0,remQ)) + " meals went unused" : "everything used")
-        : plural(leftS, "snack", "snacks") + " · " + plural(leftQ, "meal", "meals") +
-          (cardNow > 0 || spentToday > 0 ? " · " + money(cardLeftToday) + " card" : "");
+      document.getElementById("sofar-" + side).textContent =
+        countNoun(Math.max(0, remS), "snack", "snacks") + " · " +
+        countNoun(Math.max(0, remQ), "meal", "meals") + " left overall";
 
-      return '<div class="pace-row" data-side="' + side + '">' +
-          '<span class="who">' + NAMES[side] + '</span>' +
-          '<span class="allow' + (short ? " short" : "") + '">' + allowText + '</span>' +
-          '<span class="sofar">' + countNoun(Math.max(0, remQ), "meal", "meals") + " left overall</span>" +
-        '</div>';
-    }).join("");
+      var groups = document.getElementById("groups-" + side);
+      var text = document.getElementById("ptext-" + side);
+
+      if (over || early) {
+        groups.hidden = true;
+        text.hidden = false;
+        text.textContent = over
+          ? (remS > 0 || remQ > 0
+              ? countNoun(Math.max(0,remS), "snack", "snacks") + " and " +
+                countNoun(Math.max(0,remQ), "meal", "meals") + " went unused"
+              : "Everything used — nothing went to waste.")
+          : "Blocks appear on " + longDay(settings.start) + ", your first day.";
+        return;
+      }
+
+      groups.hidden = false;
+      text.hidden = true;
+
+      renderPips("tpips-" + side + "-snacks", side, "snacks", used.s, shareS,
+                 "today", "None today");
+      renderPips("tpips-" + side + "-qs", side, "qs", used.q, shareQ,
+                 "today", "None today");
+      document.getElementById("tlab-" + side + "-qs").classList.toggle("short", short);
+      document.getElementById("tcard-" + side).textContent = money(cardLeftToday);
+    });
 
     if (over) {
       note.innerHTML = "Credits expired at midnight on <strong>" + longDay(settings.end) + "</strong>. Settle up above if there's anything outstanding.";
@@ -1210,6 +1264,14 @@ footer{font-size:12.5px;color:var(--muted);text-align:center;line-height:1.7}
       try { localStorage.setItem("ddl:me", side); } catch(e){}
       render();
     });
+  });
+
+  document.getElementById("pace").addEventListener("click", function(ev){
+    var btn = ev.target.closest('button[data-act="pip"]');
+    if (!btn) return;
+    var spent = btn.classList.contains("used") || btn.classList.contains("over");
+    bumpCredit(btn.getAttribute("data-side"), btn.getAttribute("data-kind"), spent ? -1 : 1);
+    if (!spent) sparkle(btn);
   });
 
   document.getElementById("settle-btn").addEventListener("click", settleUp);
